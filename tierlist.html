@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tier List Creator</title>
+<style>
+    html, body { background: #000 !important; margin: 0; min-height: 100vh; }
+    body {
+        background: #000;
+        font-family: Arial, sans-serif;
+        color: white;
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1 { text-align: center; }
+
+    .tier {
+        display: flex;
+        align-items: stretch;
+        margin: 10px 0;
+        border: 1px solid #333;
+    }
+
+    .tier-label {
+        width: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+    }
+
+    .tier-content {
+        flex: 1;
+        min-height: 100px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+        background: #111;
+    }
+
+    .img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        cursor: grab;
+        border-radius: 6px;
+    }
+
+    .upload-area {
+      text-align: center;
+      margin-top: 20px;
+      margin-bottom: 40px;
+      padding: 25px;
+      font-size: 22px;
+      border: 2px dashed #666;
+      border-radius: 12px;
+    }
+
+    .pool {
+        margin-top: 30px;
+        border: 2px dashed #444;
+        padding: 10px;
+        min-height: 70px;
+        background: #0a0a0a;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .saves {
+        margin-top:40px;
+        border-top:1px solid #333;
+        padding-top:20px;
+    }
+
+    .save-slots{
+        display:flex;
+        gap:20px;
+        flex-wrap:wrap;
+        margin-top:15px;
+    }
+
+    .slot{
+        width:160px;
+        height:100px;
+        border:2px solid #444;
+        background:#111;
+        position:relative;
+        overflow:hidden;
+        cursor:pointer;
+    }
+
+    .slot .mini{
+        transform:scale(0.25);
+        transform-origin: top left;
+        width:600px;
+        pointer-events:none;
+    }
+
+    .delete-btn{
+        position:absolute;
+        top:3px;
+        right:3px;
+        background:#ff0000;
+        border:none;
+        color:white;
+        font-size:12px;
+        padding:2px 6px;
+        cursor:pointer;
+        z-index:10;
+    }
+
+    .footer-space{
+        height:120px;
+        width:100%;
+    }
+
+    button{
+        padding:10px 18px;
+        font-size:16px;
+        cursor:pointer;
+    }
+</style>
+</head>
+<body>
+
+<h1>Tier List Creator</h1>
+
+<div id="tiers"></div>
+
+<h3>Banco de imagens</h3>
+<div id="pool" class="pool"></div>
+
+<div class="upload-area">
+    <label>Enviar imagens</label>
+    <input type="file" id="upload" multiple accept="image/*">
+</div>
+
+<div class="saves">
+<h2>Salvar suas listas</h2>
+<button onclick="saveCurrent()">Salvar lista</button>
+<div class="save-slots" id="slots"></div>
+</div>
+
+<div class="footer-space"></div>
+
+<script>
+const tierData = [
+    {color:'#ff0000', text:'S'},
+    {color:'#ff7f00', text:'A'},
+    {color:'#ffff00', text:'B'},
+    {color:'#7fff00', text:'C'},
+    {color:'#00ff00', text:'D'}
+];
+
+const tiersContainer = document.getElementById('tiers');
+const pool = document.getElementById('pool');
+const slotsContainer = document.getElementById('slots');
+let dragging=false;
+
+function createTier(color,text){
+    const tier=document.createElement('div');
+    tier.className='tier';
+
+    const label=document.createElement('div');
+    label.className='tier-label';
+    label.style.background=color;
+
+    const input=document.createElement('input');
+    input.value=text;
+    input.style.width='80px';
+    label.appendChild(input);
+
+    const content=document.createElement('div');
+    content.className='tier-content';
+    content.ondragover=e=>e.preventDefault();
+    content.ondrop=e=>{
+        e.preventDefault();
+        const id=e.dataTransfer.getData('id');
+        content.appendChild(document.getElementById(id));
+    };
+
+    tier.appendChild(label);
+    tier.appendChild(content);
+    tiersContainer.appendChild(tier);
+}
+
+tierData.forEach(t=>createTier(t.color,t.text));
+
+// criar 5 slots
+for(let i=0;i<5;i++){
+    const slot=document.createElement('div');
+    slot.className='slot';
+    slot.dataset.index=i;
+    slot.onclick=()=>loadSave(i);
+
+    const del=document.createElement('button');
+    del.textContent='X';
+    del.className='delete-btn';
+    del.onclick=(e)=>{
+        e.stopPropagation();
+        deleteSave(i);
+    };
+
+    slot.appendChild(del);
+    slotsContainer.appendChild(slot);
+}
+
+function saveCurrent(){
+    for(let i=0;i<5;i++){
+        if(!localStorage.getItem('tierSave'+i)){
+            const data={ tiers:tiersContainer.innerHTML, pool:pool.innerHTML };
+            localStorage.setItem('tierSave'+i,JSON.stringify(data));
+            renderSlot(i);
+            return;
+        }
+    }
+    alert('Todos os 5 slots estão ocupados');
+}
+
+function deleteSave(i){
+    localStorage.removeItem('tierSave'+i);
+    const slot=document.querySelector(`[data-index='${i}']`);
+    slot.innerHTML='';
+    const del=document.createElement('button');
+    del.textContent='X';
+    del.className='delete-btn';
+    del.onclick=(e)=>{ e.stopPropagation(); deleteSave(i); };
+    slot.appendChild(del);
+}
+
+function renderSlot(i){
+    const slot=document.querySelector(`[data-index='${i}']`);
+    slot.innerHTML='';
+    const del=document.createElement('button');
+    del.textContent='X';
+    del.className='delete-btn';
+    del.onclick=(e)=>{ e.stopPropagation(); deleteSave(i); };
+    slot.appendChild(del);
+
+    const data=JSON.parse(localStorage.getItem('tierSave'+i));
+    const mini=document.createElement('div');
+    mini.className='mini';
+    mini.innerHTML=data.tiers;
+    slot.appendChild(mini);
+}
+
+function loadSave(i){
+    const data=localStorage.getItem('tierSave'+i);
+    if(!data) return;
+    const parsed=JSON.parse(data);
+    tiersContainer.innerHTML=parsed.tiers;
+    pool.innerHTML=parsed.pool;
+    rebindImages();
+}
+
+function rebindImages(){
+    document.querySelectorAll('.img').forEach(img=>{
+        img.draggable=true;
+        img.ondragstart=e=>{
+            dragging=true;
+            e.dataTransfer.setData('id',img.id);
+        };
+        img.ondragend=()=>dragging=false;
+    });
+}
+
+// carregar previews
+for(let i=0;i<5;i++){
+    if(localStorage.getItem('tierSave'+i)) renderSlot(i);
+}
+
+const upload=document.getElementById('upload');
+upload.addEventListener('change',e=>{
+    const files=e.target.files;
+    for(let i=0;i<files.length;i++){
+        const reader=new FileReader();
+        reader.onload=ev=>{
+            const img=document.createElement('img');
+            img.src=ev.target.result;
+            img.className='img';
+            img.id='img_'+Math.random();
+            img.draggable=true;
+            img.ondragstart=e=>{
+                dragging=true;
+                e.dataTransfer.setData('id',img.id);
+            };
+            img.ondragend=()=>dragging=false;
+            pool.appendChild(img);
+        };
+        reader.readAsDataURL(files[i]);
+    }
+});
+</script>
+
+</body>
+</html>
