@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Percentual de Força</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        width: 360px;
+        text-align: center;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    input, select {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+    }
+    button {
+        padding: 10px;
+        width: 100%;
+        margin-top: 10px;
+        border: none;
+        background: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+    }
+    #resultado {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+    .barra {
+        width: 100%;
+        height: 18px;
+        background: #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    .barra-preenchida {
+        height: 100%;
+        width: 0%;
+        background: #4CAF50;
+        transition: width 0.6s ease;
+    }
+    #nivel {
+        margin-top: 10px;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Percentual de Força</h2>
+    <input type="number" id="peso" placeholder="Peso (kg)">
+    <input type="number" id="altura" placeholder="Altura (cm)">
+    <input type="number" id="massa" placeholder="Massa muscular (kg)">
+    <input type="number" id="gordura" placeholder="% de gordura corporal">
+    <input type="number" id="anos" placeholder="Anos em artes marciais">
+    <input type="number" id="horas" placeholder="Horas de treino por semana">
+    <input type="number" id="supino" placeholder="Supino máximo (kg)">
+    <input type="number" id="agachamento" placeholder="Agachamento máximo (kg)">
+    <input type="number" id="idade" placeholder="Idade">
+    <select id="sexo">
+        <option value="1">Masculino</option>
+        <option value="0.9">Feminino</option>
+    </select>
+    <button id="btnCalcular">Calcular</button>
+    <div id="resultado"></div>
+    <div class="barra"><div id="barra" class="barra-preenchida"></div></div>
+    <div id="nivel"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btnCalcular');
+    btn.addEventListener('click', calcular);
+});
+
+function calcular() {
+    let peso = parseFloat(document.getElementById('peso').value) || 0;
+    let altura = parseFloat(document.getElementById('altura').value) || 0;
+    let massa = parseFloat(document.getElementById('massa').value) || 0;
+    let gordura = parseFloat(document.getElementById('gordura').value) || 0;
+    let anos = parseFloat(document.getElementById('anos').value) || 0;
+    let horas = parseFloat(document.getElementById('horas').value) || 0;
+    let supino = parseFloat(document.getElementById('supino').value) || 0;
+    let agachamento = parseFloat(document.getElementById('agachamento').value) || 0;
+    let idade = parseFloat(document.getElementById('idade').value) || 0;
+    let sexo = parseFloat(document.getElementById('sexo').value);
+
+    let fatorIdade = 1;
+    if(idade < 20) fatorIdade = 0.9;
+    else if(idade <= 35) fatorIdade = 1.05;
+    else if(idade <= 50) fatorIdade = 0.95;
+    else fatorIdade = 0.85;
+
+    let experiencia = Math.min(anos, 20);
+    let treino = Math.min(horas, 20);
+
+    let imc = altura > 0 ? peso / ((altura/100)*(altura/100)) : 0;
+
+    let score = (
+        (massa * 2.5) +
+        (experiencia * 6) +
+        (treino * 2) +
+        (supino * 0.8) +
+        (agachamento * 0.9) +
+        ((30 - gordura) * 1.5) +
+        ((25 - Math.abs(imc-24)) * 1.2)
+    ) * fatorIdade * sexo;
+
+    let percentual = Math.max(1, Math.min(100, Math.round(score / 12)));
+
+    // níveis a cada 10%
+    const niveis = [
+        "Seu lixo",
+        "Precisa comer mais arroz e feijão",
+        "Tá fraquin em meu fih",
+        "Bem mais ou menos",
+        "Mediano",
+        "Mais ou menos, pelo menos é um pouco melhor que o mediano",
+        "Musculoso",
+        "Atleta de 10 dias",
+        "Atleta brabo",
+        "gigachad"
+    ];
+
+    let indiceNivel = Math.min(9, Math.floor(percentual / 10));
+    let nivel = niveis[indiceNivel];
+
+    document.getElementById('resultado').innerText =
+        "Você está aproximadamente mais forte que " + percentual + "% da população.";
+
+    document.getElementById('nivel').innerText = "Nível estimado: " + nivel;
+    document.getElementById('barra').style.width = percentual + "%";
+}
+
+// Testes básicos de verificação
+(function testes(){
+    console.assert(typeof calcular === 'function', 'Função calcular deve existir');
+})();
+</script>
+
+</body>
+</html>
